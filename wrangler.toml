@@ -1,0 +1,17 @@
+name = "gcli2api-worker"
+main = "src/worker.ts"
+compatibility_date = "2024-11-24"
+
+[vars]
+# Optional: override upstream endpoint; leave default for Gemini CLI proxying.
+CODE_ASSIST_ENDPOINT = "https://cloudcode-pa.googleapis.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gcli2api"
+# Replace with your D1 database id after creation.
+database_id = "REPLACE_WITH_D1_ID"
+
+[assets]
+binding = "ASSETS"
+directory = "public"
