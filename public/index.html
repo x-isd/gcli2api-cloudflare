@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GCli2API Cloudflare 管理台 by VeroFess</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        --bg: #0b0b0d;
+        --panel: #0f1014;
+        --panel-soft: #0b0c0f;
+        --border: #1a1a1d;
+        --muted: #a7abb3;
+        --text: #f2f2f5;
+        --accent: #f2f2f5;
+        background: var(--bg);
+        color: var(--text);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0 14px 28px;
+        background: var(--bg);
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+      header {
+        padding: 18px 0 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      h1 {
+        margin: 0;
+        font-weight: 650;
+        letter-spacing: 0.1px;
+        font-size: 22px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      section {
+        border: 1px solid var(--border);
+        background: var(--panel);
+        border-radius: 2px;
+        padding: 14px;
+        margin-bottom: 10px;
+      }
+      .warning {
+        border: 1px solid #262626;
+        background: #0e0e0f;
+        color: #f5e6d0;
+        border-radius: 2px;
+        padding: 12px 14px;
+        line-height: 1.45;
+      }
+      .warning strong {
+        display: inline-block;
+        margin-bottom: 6px;
+      }
+      .warning ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+      .warning li + li {
+        margin-top: 2px;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 2px;
+        border: 1px solid var(--border);
+        background: var(--panel-soft);
+        color: var(--text);
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 96px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+        align-items: end;
+      }
+      button {
+        padding: 9px 12px;
+        border-radius: 2px;
+        border: 1px solid #2a2a2e;
+        background: #0f1115;
+        color: var(--text);
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      button.primary {
+        background: #16181d;
+        border-color: #2f2f34;
+      }
+      button.primary:hover {
+        background: #1d1f25;
+      }
+      button.danger {
+        border-color: #3b2a2a;
+        background: #1a1111;
+      }
+      button.danger:hover {
+        background: #211717;
+      }
+      button.secondary:hover {
+        background: #16181d;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 10px;
+      }
+      .card {
+        border: 1px solid var(--border);
+        background: var(--panel-soft);
+        border-radius: 2px;
+        padding: 12px;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .pill {
+        padding: 2px 10px;
+        border-radius: 999px;
+        border: 1px solid #2a2a2e;
+        font-size: 12px;
+        color: #e3e3e6;
+      }
+      .pill.off {
+        border-color: #40352e;
+        color: #e6d6c9;
+      }
+      .message {
+        padding: 9px 10px;
+        border-radius: 2px;
+        margin: 8px 0;
+        border: 1px solid #262a30;
+        background: #121417;
+        color: var(--text);
+      }
+      .error {
+        border-color: #3c1f1f;
+        background: #1a1111;
+        color: #ffb5b5;
+      }
+      .empty {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>GCli2API Cloudflare 管理台</h1>
+        <p class="muted">
+          所有接口均需密码。本页可用浏览器的 HTTP Basic 访问，API 支持 Bearer / x-goog-api-key / ?key。
+          密码仅保存在服务器端。
+        </p>
+      </header>
+
+      <div class="warning">
+        <strong>安全提示</strong>
+        <ul>
+          <li>二次开发请不要添加“网页直接 OAuth 登录”功能，可能导致你的 cf 账号和域名被封!!</li>
+          <li>严禁移除这些安全警告。</li>
+          <li>本项目开源免费，任何收费售卖/代搭建都是骗局, 同时违反了该项目的授权。</li>
+          <li>在此上传 JSON 凭据等同于上传密码，请仅在可信环境操作。</li>
+          <li>本子目录使用 PolyForm Noncommercial 许可证（见 LICENSE），禁止任何商用。</li>
+        </ul>
+      </div>
+
+      <section>
+        <h2 style="margin: 0 0 8px">创建账户</h2>
+        <p class="muted" style="margin: 0 0 12px">
+          粘贴 authorized_user.json 或填写必要字段。必须提供 GCP Project ID。
+        </p>
+        <form id="createForm" class="grid">
+          <label>
+            账户标签
+            <input name="label" placeholder="例如: prod-primary" required />
+          </label>
+          <label>
+            项目 ID
+            <input name="projectId" placeholder="例如: my-gcp-project" />
+          </label>
+          <label>
+            Client ID
+            <input name="clientId" placeholder="xxxx.apps.googleusercontent.com" />
+          </label>
+          <label>
+            Client Secret
+            <input name="clientSecret" placeholder="client secret" />
+          </label>
+          <label>
+            Refresh Token
+            <input name="refreshToken" placeholder="refresh token" />
+          </label>
+          <label>
+            Token URI（可选）
+            <input name="tokenUri" placeholder="https://oauth2.googleapis.com/token" />
+          </label>
+          <label style="grid-column: 1/-1">
+            authorized_user.json（可选，会覆盖上方字段）
+            <textarea
+              name="authorizedJson"
+              placeholder='{"client_id":"","client_secret":"","refresh_token":"","project_id":""}'
+            ></textarea>
+          </label>
+          <button type="button" class="secondary" id="parseJsonBtn">解析 JSON 并填充</button>
+          <button type="submit" class="primary">创建账户</button>
+        </form>
+        <div id="createMessage" class="message" hidden></div>
+      </section>
+
+      <section>
+        <div class="row" style="justify-content: space-between">
+          <h2 style="margin: 0">账户列表</h2>
+          <div class="row">
+            <button id="reloadBtn" type="button" class="secondary">刷新</button>
+          </div>
+        </div>
+        <div id="accounts" class="cards"></div>
+        <div id="empty" class="empty">暂无账户。</div>
+        <div id="errorBox" class="message error" hidden></div>
+      </section>
+    </main>
+
+    <script type="module">
+      const accountsEl = document.getElementById('accounts');
+      const emptyEl = document.getElementById('empty');
+      const errorBox = document.getElementById('errorBox');
+      const createForm = document.getElementById('createForm');
+      const createMessage = document.getElementById('createMessage');
+      const parseJsonBtn = document.getElementById('parseJsonBtn');
+
+      async function api(path, options = {}) {
+        const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+        const response = await fetch(path, {
+          ...options,
+          headers,
+          credentials: 'include',
+        });
+        const contentType = response.headers.get('content-type') || '';
+        const textBody = await response.text();
+        if (!response.ok) {
+          let message = textBody || `HTTP ${response.status}`;
+          if (textBody && contentType.includes('application/json')) {
+            try {
+              const data = JSON.parse(textBody);
+              if (data?.error?.message) message = data.error.message;
+              else if (data?.message) message = data.message;
+            } catch {
+              /* ignore */
+            }
+          }
+          throw new Error(message);
+        }
+        if (response.status === 204) return null;
+        if (!textBody) return null;
+        if (contentType.includes('application/json')) {
+          try {
+            return JSON.parse(textBody);
+          } catch {
+            // fall through
+          }
+        }
+        return textBody;
+      }
+
+      function renderAccounts(list) {
+        accountsEl.innerHTML = '';
+        if (!list.length) {
+          emptyEl.hidden = false;
+          return;
+        }
+        emptyEl.hidden = true;
+        for (const acc of list) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="row" style="justify-content: space-between">
+              <div>
+                <h3 style="margin:0">${escapeHtml(acc.label)}</h3>
+                <div class="muted">项目: ${escapeHtml(acc.projectId || '未设置')}</div>
+              </div>
+              <div class="pill ${acc.isEnabled ? '' : 'off'}">
+                ${acc.isEnabled ? '启用中' : '已停用'}
+              </div>
+            </div>
+            <div class="muted">更新时间: ${formatDate(acc.updatedAt)}</div>
+            ${acc.lastError ? `<div class="message error">最近错误: ${escapeHtml(acc.lastError)}</div>` : ''}
+            <div class="row" style="margin-top:10px">
+              <button data-action="toggle" data-id="${acc.id}">
+                ${acc.isEnabled ? '停用' : '启用'}
+              </button>
+              <button data-action="project" data-id="${acc.id}">更新项目 ID</button>
+              <button data-action="import" data-id="${acc.id}" data-label="${acc.label}">导入 JSON</button>
+              <button data-action="export" data-id="${acc.id}" data-label="${acc.label}">导出 JSON</button>
+              <button data-action="delete" data-id="${acc.id}" class="danger">删除</button>
+            </div>
+          `;
+          accountsEl.appendChild(card);
+        }
+      }
+
+      async function loadAccounts() {
+        errorBox.hidden = true;
+        try {
+          const data = await api('/api/accounts');
+          renderAccounts(data.accounts || []);
+        } catch (error) {
+          errorBox.hidden = false;
+          errorBox.textContent = error.message;
+        }
+      }
+
+      createForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        createMessage.hidden = true;
+        const form = new FormData(createForm);
+        const body = {
+          label: form.get('label')?.trim(),
+          projectId: form.get('projectId')?.trim(),
+          clientId: form.get('clientId')?.trim() || undefined,
+          clientSecret: form.get('clientSecret')?.trim() || undefined,
+          refreshToken: form.get('refreshToken')?.trim() || undefined,
+          tokenUri: form.get('tokenUri')?.trim() || undefined,
+        };
+        const jsonText = form.get('authorizedJson')?.trim();
+        if (jsonText) {
+          try {
+            body.authorizedUser = JSON.parse(jsonText);
+          } catch (error) {
+            createMessage.hidden = false;
+            createMessage.className = 'message error';
+            createMessage.textContent = 'authorized_user 区块不是合法 JSON';
+            return;
+          }
+        }
+        try {
+          await api('/api/accounts', {
+            method: 'POST',
+            body: JSON.stringify(body),
+          });
+          createForm.reset();
+          createMessage.hidden = false;
+          createMessage.className = 'message';
+          createMessage.textContent = '账户已创建，首次请求会自动刷新 Access Token。';
+          await loadAccounts();
+        } catch (error) {
+          createMessage.hidden = false;
+          createMessage.className = 'message error';
+          createMessage.textContent = error.message;
+        }
+      });
+
+      accountsEl.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const action = target.dataset.action;
+        const id = target.dataset.id;
+        if (!action || !id) return;
+        try {
+          if (action === 'delete') {
+            const ok = confirm('确定删除该账户吗？此操作不可恢复。');
+            if (!ok) return;
+            await api(`/api/accounts/${id}`, { method: 'DELETE' });
+          } else if (action === 'toggle') {
+            const enable = target.textContent?.includes('启用');
+            await api(`/api/accounts/${id}/enabled`, {
+              method: 'PATCH',
+              body: JSON.stringify({ enabled: enable }),
+            });
+          } else if (action === 'project') {
+            const newProject = prompt('输入新的 Project ID');
+            if (!newProject) return;
+            await api(`/api/accounts/${id}/project`, {
+              method: 'PATCH',
+              body: JSON.stringify({ projectId: newProject.trim() }),
+            });
+          } else if (action === 'import') {
+            const file = await pickJsonFile();
+            if (!file) return;
+            const text = await file.text();
+            let payload;
+            try {
+              payload = JSON.parse(text);
+            } catch {
+              alert('JSON 文件不合法');
+              return;
+            }
+            await api(`/api/accounts/${id}/credentials/import`, {
+              method: 'POST',
+              body: JSON.stringify({ authorizedUser: payload }),
+            });
+          } else if (action === 'export') {
+            const label = target.dataset.label || id;
+            const data = await api(`/api/accounts/${id}/credentials/export`);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sanitizeFileName(label)}-authorized_user.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }
+          await loadAccounts();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      parseJsonBtn?.addEventListener('click', () => {
+        tryFillFromJson();
+      });
+
+      function tryFillFromJson() {
+        const textarea = createForm.querySelector('textarea[name="authorizedJson"]');
+        if (!textarea) return;
+        const text = textarea.value.trim();
+        if (!text) {
+          showCreateHint('请先粘贴 authorized_user.json', true);
+          return;
+        }
+        let payload;
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          showCreateHint('JSON 解析失败，请检查格式', true);
+          return;
+        }
+        if (typeof payload !== 'object' || Array.isArray(payload)) {
+          showCreateHint('JSON 必须是对象', true);
+          return;
+        }
+        const setIf = (name, value) => {
+          const input = createForm.querySelector(`[name="${name}"]`);
+          if (!input || typeof value !== 'string' || !value.trim()) return;
+          input.value = value.trim();
+        };
+        setIf('clientId', payload.client_id || payload.clientId);
+        setIf('clientSecret', payload.client_secret || payload.clientSecret);
+        setIf('refreshToken', payload.refresh_token || payload.refreshToken);
+        setIf('tokenUri', payload.token_uri || payload.tokenUri);
+        setIf('projectId', payload.project_id || payload.projectId);
+        showCreateHint('已从 JSON 填充字段，可直接提交。', false);
+      }
+
+      function showCreateHint(text, isError) {
+        createMessage.hidden = false;
+        createMessage.className = 'message' + (isError ? ' error' : '');
+        createMessage.textContent = text;
+      }
+
+      document.getElementById('reloadBtn')?.addEventListener('click', loadAccounts);
+      loadAccounts();
+
+      function pickJsonFile() {
+        return new Promise((resolve) => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json,application/json';
+          input.addEventListener(
+            'change',
+            () => {
+              resolve(input.files && input.files[0] ? input.files[0] : null);
+            },
+            { once: true },
+          );
+          input.click();
+        });
+      }
+
+      function sanitizeFileName(name) {
+        return String(name || 'account').replace(/[^\w.-]+/g, '_');
+      }
+
+      function formatDate(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '未知时间';
+        return date.toLocaleString();
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+    </script>
+  </body>
+</html>
