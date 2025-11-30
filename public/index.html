@@ -73,6 +73,29 @@
       .warning li + li {
         margin-top: 2px;
       }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .tab-btn {
+        padding: 9px 12px;
+        border-radius: 2px;
+        border: 1px solid #2a2a2e;
+        background: #101117;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .tab-btn.active {
+        background: #1b1d25;
+        border-color: #3b3b42;
+      }
+      .tab-panel {
+        display: none;
+      }
+      .tab-panel.active {
+        display: block;
+      }
       label {
         display: flex;
         flex-direction: column;
@@ -179,7 +202,7 @@
       <header>
         <h1>GCli2API Cloudflare 管理台</h1>
         <p class="muted">
-          所有接口均需密码。本页可用浏览器的 HTTP Basic 访问，API 支持 Bearer / x-goog-api-key / ?key。
+          所有接口均需密码。浏览器请先登录 /login，API 支持 Bearer / x-goog-api-key / ?key。
           密码仅保存在服务器端。
         </p>
       </header>
@@ -195,60 +218,118 @@
         </ul>
       </div>
 
-      <section>
-        <h2 style="margin: 0 0 8px">创建账户</h2>
-        <p class="muted" style="margin: 0 0 12px">
-          粘贴 authorized_user.json 或填写必要字段。必须提供 GCP Project ID。
-        </p>
-        <form id="createForm" class="grid">
-          <label>
-            账户标签
-            <input name="label" placeholder="例如: prod-primary" required />
-          </label>
-          <label>
-            项目 ID
-            <input name="projectId" placeholder="例如: my-gcp-project" />
-          </label>
-          <label>
-            Client ID
-            <input name="clientId" placeholder="xxxx.apps.googleusercontent.com" />
-          </label>
-          <label>
-            Client Secret
-            <input name="clientSecret" placeholder="client secret" />
-          </label>
-          <label>
-            Refresh Token
-            <input name="refreshToken" placeholder="refresh token" />
-          </label>
-          <label>
-            Token URI（可选）
-            <input name="tokenUri" placeholder="https://oauth2.googleapis.com/token" />
-          </label>
-          <label style="grid-column: 1/-1">
-            authorized_user.json（可选，会覆盖上方字段）
-            <textarea
-              name="authorizedJson"
-              placeholder='{"client_id":"","client_secret":"","refresh_token":"","project_id":""}'
-            ></textarea>
-          </label>
-          <button type="button" class="secondary" id="parseJsonBtn">解析 JSON 并填充</button>
-          <button type="submit" class="primary">创建账户</button>
-        </form>
-        <div id="createMessage" class="message" hidden></div>
-      </section>
+      <div class="tabs">
+        <button class="tab-btn active" data-target="tab-main">Gemini 账户</button>
+        <button class="tab-btn" data-target="tab-ant">Antigravity 账户</button>
+      </div>
 
-      <section>
-        <div class="row" style="justify-content: space-between">
-          <h2 style="margin: 0">账户列表</h2>
-          <div class="row">
-            <button id="reloadBtn" type="button" class="secondary">刷新</button>
+      <div id="tab-main" class="tab-panel active">
+        <section>
+          <h2 style="margin: 0 0 8px">创建账户</h2>
+          <p class="muted" style="margin: 0 0 12px">
+            粘贴 authorized_user.json 或填写必要字段。Project ID 可留空但建议填写。
+          </p>
+          <form id="createForm" class="grid">
+            <label>
+              账户标签
+              <input name="label" placeholder="例如: prod-primary" required />
+            </label>
+            <label>
+              项目 ID
+              <input name="projectId" placeholder="例如: my-gcp-project" />
+            </label>
+            <label>
+              Client ID
+              <input name="clientId" placeholder="xxxx.apps.googleusercontent.com" />
+            </label>
+            <label>
+              Client Secret
+              <input name="clientSecret" placeholder="client secret" />
+            </label>
+            <label>
+              Refresh Token
+              <input name="refreshToken" placeholder="refresh token" />
+            </label>
+            <label>
+              Token URI（可选）
+              <input name="tokenUri" placeholder="https://oauth2.googleapis.com/token" />
+            </label>
+            <label style="grid-column: 1/-1">
+              authorized_user.json（可选，会覆盖上方字段）
+              <textarea
+                name="authorizedJson"
+                placeholder='{"client_id":"","client_secret":"","refresh_token":"","project_id":""}'
+              ></textarea>
+            </label>
+            <button type="button" class="secondary" id="parseJsonBtn">解析 JSON 并填充</button>
+            <button type="submit" class="primary">创建账户</button>
+          </form>
+          <div id="createMessage" class="message" hidden></div>
+        </section>
+
+        <section>
+          <h2 style="margin: 0 0 8px">批量导入</h2>
+          <p class="muted" style="margin: 0 0 12px">
+            支持上传上方格式的批量 JSON（含 creds 字段）。将为每条凭据自动生成标签：优先使用 project_id，其次文件名（去后缀）。
+          </p>
+          <div class="grid">
+            <label style="grid-column: 1/-1">
+              批量 JSON
+              <textarea id="bulkJson" placeholder='{"creds":{...}}'></textarea>
+            </label>
+            <label>
+              从文件载入
+              <input type="file" id="bulkFile" accept=".json,application/json" />
+            </label>
+            <button type="button" class="primary" id="bulkImportBtn">开始导入</button>
           </div>
-        </div>
-        <div id="accounts" class="cards"></div>
-        <div id="empty" class="empty">暂无账户。</div>
-        <div id="errorBox" class="message error" hidden></div>
-      </section>
+          <div id="bulkMessage" class="message" hidden></div>
+        </section>
+
+        <section>
+          <div class="row" style="justify-content: space-between">
+            <h2 style="margin: 0">账户列表</h2>
+            <div class="row">
+              <button id="reloadBtn" type="button" class="secondary">刷新</button>
+            </div>
+          </div>
+          <div id="accounts" class="cards"></div>
+          <div id="empty" class="empty">暂无账户。</div>
+          <div id="errorBox" class="message error" hidden></div>
+        </section>
+      </div>
+
+      <div id="tab-ant" class="tab-panel">
+        <section>
+          <h2 style="margin: 0 0 8px">导入 Antigravity 账户</h2>
+          <p class="muted" style="margin: 0 0 12px">
+            粘贴 Antigravity 客户端导出的 JSON（支持顶层对象或 creds 字段），可批量导入。
+          </p>
+          <div class="grid">
+            <label style="grid-column: 1/-1">
+              Antigravity JSON
+              <textarea
+                id="antImportJson"
+                placeholder='"userID_xxx": {"status": {...},"content":{"access_token":"", "refresh_token":""}}'
+              ></textarea>
+            </label>
+            <button type="button" class="primary" id="antImportBtn">导入到池</button>
+          </div>
+          <div id="antImportMessage" class="message" hidden></div>
+        </section>
+
+        <section>
+          <div class="row" style="justify-content: space-between">
+            <h2 style="margin: 0">Antigravity 账户列表</h2>
+            <div class="row">
+              <button id="antReloadBtn" type="button" class="secondary">刷新</button>
+            </div>
+          </div>
+          <div id="antAccounts" class="cards"></div>
+          <div id="antEmpty" class="empty">暂无 Antigravity 账户。</div>
+          <div id="antErrorBox" class="message error" hidden></div>
+        </section>
+      </div>
     </main>
 
     <script type="module">
@@ -258,6 +339,37 @@
       const createForm = document.getElementById('createForm');
       const createMessage = document.getElementById('createMessage');
       const parseJsonBtn = document.getElementById('parseJsonBtn');
+      const bulkJson = document.getElementById('bulkJson');
+      const bulkFile = document.getElementById('bulkFile');
+      const bulkImportBtn = document.getElementById('bulkImportBtn');
+      const bulkMessage = document.getElementById('bulkMessage');
+      const antAccountsEl = document.getElementById('antAccounts');
+      const antEmptyEl = document.getElementById('antEmpty');
+      const antErrorBox = document.getElementById('antErrorBox');
+      const antImportJson = document.getElementById('antImportJson');
+      const antImportBtn = document.getElementById('antImportBtn');
+      const antImportMessage = document.getElementById('antImportMessage');
+      const antReloadBtn = document.getElementById('antReloadBtn');
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+      let antLoaded = false;
+
+      function goLogin() {
+        window.location.replace('/login');
+      }
+
+      tabButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          tabButtons.forEach((b) => b.classList.remove('active'));
+          tabPanels.forEach((panel) => panel.classList.remove('active'));
+          btn.classList.add('active');
+          const target = document.getElementById(btn.dataset.target);
+          target?.classList.add('active');
+          if (btn.dataset.target === 'tab-ant' && !antLoaded) {
+            loadAntAccounts();
+          }
+        });
+      });
 
       async function api(path, options = {}) {
         const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
@@ -266,6 +378,21 @@
           headers,
           credentials: 'include',
         });
+        if (response.redirected) {
+          try {
+            const redirectUrl = new URL(response.url);
+            if (redirectUrl.pathname === '/login') {
+              goLogin();
+              throw new Error('需要登录');
+            }
+          } catch {
+            /* ignore parse errors */
+          }
+        }
+        if (response.status === 401 || response.status === 403) {
+          goLogin();
+          throw new Error('需要登录');
+        }
         const contentType = response.headers.get('content-type') || '';
         const textBody = await response.text();
         if (!response.ok) {
@@ -329,6 +456,41 @@
         }
       }
 
+      function renderAntAccounts(list) {
+        antAccountsEl.innerHTML = '';
+        if (!list.length) {
+          antEmptyEl.hidden = false;
+          return;
+        }
+        antEmptyEl.hidden = true;
+        for (const acc of list) {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="row" style="justify-content: space-between">
+              <div>
+                <h3 style="margin:0">${escapeHtml(acc.label)}</h3>
+                <div class="muted">用户: ${escapeHtml(acc.userId || '未设置')}</div>
+                <div class="muted">邮箱: ${escapeHtml(acc.userEmail || '未设置')}</div>
+              </div>
+              <div class="pill ${acc.isEnabled ? '' : 'off'}">
+                ${acc.isEnabled ? '启用中' : '已停用'}
+              </div>
+            </div>
+            <div class="muted">更新时间: ${formatDate(acc.updatedAt)}</div>
+            ${acc.lastError ? `<div class="message error">最近错误: ${escapeHtml(acc.lastError)}</div>` : ''}
+            <div class="row" style="margin-top:10px">
+              <button data-action="ant-toggle" data-id="${acc.id}">
+                ${acc.isEnabled ? '停用' : '启用'}
+              </button>
+              <button data-action="ant-export" data-id="${acc.id}" data-label="${acc.label}">导出 JSON</button>
+              <button data-action="ant-delete" data-id="${acc.id}" class="danger">删除</button>
+            </div>
+          `;
+          antAccountsEl.appendChild(card);
+        }
+      }
+
       async function loadAccounts() {
         errorBox.hidden = true;
         try {
@@ -337,6 +499,18 @@
         } catch (error) {
           errorBox.hidden = false;
           errorBox.textContent = error.message;
+        }
+      }
+
+      async function loadAntAccounts() {
+        antErrorBox.hidden = true;
+        try {
+          const data = await api('/api/ant/accounts');
+          renderAntAccounts(data.accounts || []);
+          antLoaded = true;
+        } catch (error) {
+          antErrorBox.hidden = false;
+          antErrorBox.textContent = error.message;
         }
       }
 
@@ -438,8 +612,121 @@
         }
       });
 
+      antAccountsEl.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const action = target.dataset.action;
+        const id = target.dataset.id;
+        if (!action || !id) return;
+        try {
+          if (action === 'ant-delete') {
+            const ok = confirm('确定删除该账户吗？此操作不可恢复。');
+            if (!ok) return;
+            await api(`/api/ant/accounts/${id}`, { method: 'DELETE' });
+          } else if (action === 'ant-toggle') {
+            const enable = target.textContent?.includes('启用');
+            await api(`/api/ant/accounts/${id}/enabled`, {
+              method: 'PATCH',
+              body: JSON.stringify({ enabled: enable }),
+            });
+          } else if (action === 'ant-export') {
+            const label = target.dataset.label || id;
+            const data = await api(`/api/ant/accounts/${id}/export`);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sanitizeFileName(label)}-antigravity.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+          }
+          await loadAntAccounts();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
       parseJsonBtn?.addEventListener('click', () => {
         tryFillFromJson();
+      });
+
+      bulkFile?.addEventListener('change', async () => {
+        if (!bulkFile.files || !bulkFile.files[0]) return;
+        const file = bulkFile.files[0];
+        try {
+          const text = await file.text();
+          bulkJson.value = text;
+          showBulkHint(`已载入文件：${file.name}`, false);
+        } catch {
+          showBulkHint('读取文件失败', true);
+        }
+      });
+
+      bulkImportBtn?.addEventListener('click', async () => {
+        const text = bulkJson.value.trim();
+        if (!text) {
+          showBulkHint('请先填写或上传批量 JSON', true);
+          return;
+        }
+        let payload;
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          showBulkHint('批量 JSON 解析失败', true);
+          return;
+        }
+        showBulkHint('正在导入...', false);
+        try {
+          const res = await api('/api/accounts/bulk', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          const summary = `共 ${res.total || 0} 条，新增 ${res.created || 0}，跳过 ${res.skipped || 0}，失败 ${
+            res.failed || 0
+          }。`;
+          showBulkHint(summary, res.failed > 0);
+          if (Array.isArray(res.results)) {
+            const detail = res.results
+              .slice(0, 5)
+              .map((r) => `${r.label || '未知'}: ${r.status}${r.message ? ` (${r.message})` : ''}`)
+              .join(' / ');
+            if (detail) {
+              bulkMessage.textContent += ` ${detail}`;
+            }
+          }
+          await loadAccounts();
+        } catch (error) {
+          showBulkHint(error.message, true);
+        }
+      });
+
+      antImportBtn?.addEventListener('click', async () => {
+        const text = antImportJson.value.trim();
+        if (!text) {
+          showAntHint('请先粘贴 Antigravity JSON', true);
+          return;
+        }
+        let payload;
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          showAntHint('JSON 解析失败', true);
+          return;
+        }
+        showAntHint('正在导入...', false);
+        try {
+          const res = await api('/api/ant/accounts/import', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          const summary = `共 ${res.total || 0} 条，新增 ${res.created || 0}，跳过 ${res.skipped || 0}，失败 ${res.failed || 0}。`;
+          showAntHint(summary, res.failed > 0);
+          await loadAntAccounts();
+        } catch (error) {
+          showAntHint(error.message, true);
+        }
       });
 
       function tryFillFromJson() {
@@ -480,8 +767,22 @@
         createMessage.textContent = text;
       }
 
+      function showBulkHint(text, isError) {
+        bulkMessage.hidden = false;
+        bulkMessage.className = 'message' + (isError ? ' error' : '');
+        bulkMessage.textContent = text;
+      }
+
+      function showAntHint(text, isError) {
+        antImportMessage.hidden = false;
+        antImportMessage.className = 'message' + (isError ? ' error' : '');
+        antImportMessage.textContent = text;
+      }
+
       document.getElementById('reloadBtn')?.addEventListener('click', loadAccounts);
+      antReloadBtn?.addEventListener('click', loadAntAccounts);
       loadAccounts();
+      loadAntAccounts();
 
       function pickJsonFile() {
         return new Promise((resolve) => {

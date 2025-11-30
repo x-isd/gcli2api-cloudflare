@@ -28,7 +28,7 @@ This folder contains a Cloudflare Workers build of gcli2api with:
   - `Authorization: Bearer <password>` (mirrors AI Studio Bearer flow).
   - `x-goog-api-key: <password>` header.
   - `?key=<password>` query param.
-  - HTTP Basic also works for browsers (use any username, the password is validated).
+- Browser users can also log in via `/login` (standalone page, no project name shown). A short-lived HttpOnly session cookie (12h) is set on success; APIs still accept the headers above.
 - Weak secrets are rejected at runtime: length < 12, common weak strings, or the sample `PLEASE_CHANGE_ME`.
 
 ## Admin UI
@@ -46,6 +46,7 @@ This folder contains a Cloudflare Workers build of gcli2api with:
 - `POST /raw/models/{model}:generateContent` and streaming/count variants (`/raw` and `/v1beta` mirror).
 - `GET /api/accounts` - list (secrets omitted).
 - `POST /api/accounts` - create/import credentials.
+- `POST /api/accounts/bulk` - bulk import; body `{ "creds": { "filename.json": { "content": <authorized_user> } } }`.
 - `PATCH /api/accounts/:id/project` - change project id.
 - `PATCH /api/accounts/:id/enabled` - enable/disable.
 - `DELETE /api/accounts/:id` - remove.
