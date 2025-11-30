@@ -10,7 +10,7 @@ CODE_ASSIST_ENDPOINT = "https://cloudcode-pa.googleapis.com"
 binding = "DB"
 database_name = "gcli2api"
 # Replace with your D1 database id after creation.
-database_id = "a694ab56-5b75-4cad-8cd3-816a3c92f6de"
+database_id = "REPLACE_WITH_D1_ID"
 
 [assets]
 binding = "ASSETS"
